@@ -20,7 +20,10 @@ public class EmpleadoController {
     }
 
     @GetMapping
-    public List<Empleado> listar() {
+    public List<Empleado> listar(@RequestParam(required = false) Long concesionarioId) {
+        if (concesionarioId != null) {
+            return repository.findByConcesionarioId(concesionarioId);
+        }
         return repository.findAll();
     }
 
