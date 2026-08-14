@@ -22,9 +22,16 @@ public class RegistroVisita {
     @JoinColumn(name = "visitante_id", nullable = false)
     private Visitante visitante;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "empleado_visitado_id", nullable = false)
+    // Exactamente UNO de estos dos debe estar lleno (se valida en VisitaService):
+    // o visita a un empleado del sistema, o a un empleado directo del parque.
+
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "empleado_visitado_id", nullable = true)
     private Empleado empleadoVisitado;
+
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "empleado_directo_id", nullable = true)
+    private EmpleadoDirectoParque empleadoDirecto;
 
     // Área donde trabaja el empleado visitado, tomada al momento del registro
     private String area;

@@ -41,4 +41,22 @@ public class VisitaController {
     public RegistroVisita registrarSalida(@PathVariable Long id) {
         return visitaService.registrarSalida(id);
     }
+
+    // Historial de visitas recibidas por un empleado del sistema
+    @GetMapping("/empleado/{empleadoId}")
+    public List<RegistroVisita> historialPorEmpleado(@PathVariable Long empleadoId) {
+        return visitaService.historialPorEmpleado(empleadoId);
+    }
+
+    // Historial de visitas recibidas por un empleado directo del parque
+    @GetMapping("/empleado-directo/{empleadoDirectoId}")
+    public List<RegistroVisita> historialPorEmpleadoDirecto(@PathVariable Long empleadoDirectoId) {
+        return visitaService.historialPorEmpleadoDirecto(empleadoDirectoId);
+    }
+
+    // Historial de visitas hechas por un visitante
+    @GetMapping("/visitante/{visitanteId}")
+    public List<RegistroVisita> historialPorVisitante(@PathVariable Long visitanteId) {
+        return visitaService.historialPorVisitante(visitanteId);
+    }
 }
