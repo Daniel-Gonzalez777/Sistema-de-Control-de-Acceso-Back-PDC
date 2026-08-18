@@ -31,6 +31,8 @@ public class RegistroIngresoEmpleado {
     @JoinColumn(name = "empleado_id")
     private Empleado empleado;
 
+
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ResultadoIngreso resultado;
