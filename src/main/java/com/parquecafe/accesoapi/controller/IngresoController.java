@@ -11,8 +11,8 @@ import java.util.List;
 @RequestMapping("/api/ingreso")
 @CrossOrigin(origins = {
         "http://localhost:4200",
-        "https://front-sistema-de-control-de-acceso-7gthyuj7w.vercel.app"
-}) // origen por defecto de Angular en desarrollo
+        "https://front-sistema-de-control-de-acceso.vercel.app"
+})// origen por defecto de Angular en desarrollo
 public class IngresoController {
 
     private final IngresoService ingresoService;

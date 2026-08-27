@@ -12,7 +12,7 @@ import java.util.List;
 @RequestMapping("/api/concesionarios")
 @CrossOrigin(origins = {
         "http://localhost:4200",
-        "https://front-sistema-de-control-de-acceso-7gthyuj7w.vercel.app"
+        "https://front-sistema-de-control-de-acceso.vercel.app"
 })
 public class ConcesionarioController {
 

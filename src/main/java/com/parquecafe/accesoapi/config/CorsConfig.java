@@ -17,7 +17,7 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:4200",
-                                "https://front-sistema-de-control-de-acceso-7gthyuj7w.vercel.app"
+                                "https://front-sistema-de-control-de-acceso.vercel.app"
                         )
                         .allowedMethods(
                                 "GET",
