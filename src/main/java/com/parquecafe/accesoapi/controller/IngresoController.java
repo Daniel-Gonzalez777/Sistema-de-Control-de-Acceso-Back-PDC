@@ -9,7 +9,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/ingreso")
-@CrossOrigin(origins = "http://localhost:4200") // origen por defecto de Angular en desarrollo
+@CrossOrigin(origins = {
+        "http://localhost:4200",
+        "https://sistema-de-control-de-acceso-back-pdc.onrender.com/"
+}) // origen por defecto de Angular en desarrollo
 public class IngresoController {
 
     private final IngresoService ingresoService;
