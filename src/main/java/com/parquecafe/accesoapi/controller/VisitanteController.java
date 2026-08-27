@@ -8,7 +8,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/visitantes")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {
+        "http://localhost:4200",
+        "https://front-sistema-de-control-de-acceso-7gthyuj7w.vercel.app/"
+})
 public class VisitanteController {
 
     private final VisitanteRepository repository;
