@@ -3,6 +3,10 @@ package com.parquecafe.accesoapi.repository;
 import com.parquecafe.accesoapi.model.Empleado;
 import com.parquecafe.accesoapi.model.RegistroIngresoEmpleado;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,4 +27,17 @@ public interface RegistroIngresoEmpleadoRepository extends JpaRepository<Registr
     // del empleado dueño del registro.
     List<RegistroIngresoEmpleado> findByEmpleado_Concesionario_IdAndFechaHoraBetweenOrderByFechaHoraAsc(
             Long concesionarioId, LocalDateTime desde, LocalDateTime hasta);
+
+    // Limpieza automática del historial (RF de retención de datos): borra
+    // todo lo anterior a "fecha", EXCEPTO el último movimiento de cada
+    // empleado -- así nunca se pierde el rastro de quién sigue actualmente
+    // dentro del Parque, aunque su entrada tenga más de 2 semanas.
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RegistroIngresoEmpleado r WHERE r.fechaHora < :fecha " +
+            "AND r.id NOT IN (" +
+            "   SELECT MAX(r2.id) FROM RegistroIngresoEmpleado r2 " +
+            "   WHERE r2.empleado IS NOT NULL GROUP BY r2.empleado" +
+            ")")
+    int eliminarAnterioresAConservandoUltimoPorEmpleado(@Param("fecha") LocalDateTime fecha);
 }
