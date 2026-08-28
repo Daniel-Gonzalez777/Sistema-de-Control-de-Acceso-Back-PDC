@@ -97,20 +97,21 @@ public class IngresoService {
 
         Afiliacion afiliacion = afiliacionOpt.get();
 
+        // Junta TODOS los faltantes en vez de detenerse en el primero,
+        // para que el vigilante vea de una vez todo lo que hay que arreglar.
+        List<String> faltantes = new ArrayList<>();
         if (!afiliacion.isAfiliadoSalud()) {
-            String motivo = "No se encuentra afiliación vigente a Salud (EPS)";
-            guardarRegistro(cedula, empleado, ResultadoIngreso.NO_AUTORIZADO, TipoMovimiento.ENTRADA, motivo);
-            return new ResultadoValidacionDTO(false, empleado.getNombre(), concesionario.getNombre(), motivo, TipoMovimiento.ENTRADA);
+            faltantes.add("Salud (EPS)");
         }
-
         if (!afiliacion.isAfiliadoPension()) {
-            String motivo = "No se encuentra afiliación vigente a Pensión (AFP)";
-            guardarRegistro(cedula, empleado, ResultadoIngreso.NO_AUTORIZADO, TipoMovimiento.ENTRADA, motivo);
-            return new ResultadoValidacionDTO(false, empleado.getNombre(), concesionario.getNombre(), motivo, TipoMovimiento.ENTRADA);
+            faltantes.add("Pensión (AFP)");
+        }
+        if (!afiliacion.isAfiliadoARL()) {
+            faltantes.add("ARL");
         }
 
-        if (!afiliacion.isAfiliadoARL()) {
-            String motivo = "No se encuentra afiliación vigente a ARL";
+        if (!faltantes.isEmpty()) {
+            String motivo = "No se encuentra afiliación vigente a: " + String.join(", ", faltantes);
             guardarRegistro(cedula, empleado, ResultadoIngreso.NO_AUTORIZADO, TipoMovimiento.ENTRADA, motivo);
             return new ResultadoValidacionDTO(false, empleado.getNombre(), concesionario.getNombre(), motivo, TipoMovimiento.ENTRADA);
         }
