@@ -1,14 +1,19 @@
 package com.parquecafe.accesoapi.service;
 
+import com.parquecafe.accesoapi.dto.CalendarioMensualDTO;
+import com.parquecafe.accesoapi.dto.DiaCalendarioDTO;
+import com.parquecafe.accesoapi.dto.MovimientoCalendarioDTO;
 import com.parquecafe.accesoapi.dto.ResultadoValidacionDTO;
 import com.parquecafe.accesoapi.model.*;
 import com.parquecafe.accesoapi.repository.AfiliacionRepository;
+import com.parquecafe.accesoapi.repository.ConcesionarioRepository;
 import com.parquecafe.accesoapi.repository.EmpleadoRepository;
 import com.parquecafe.accesoapi.repository.RegistroIngresoEmpleadoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class IngresoService {
@@ -16,13 +21,16 @@ public class IngresoService {
     private final EmpleadoRepository empleadoRepository;
     private final AfiliacionRepository afiliacionRepository;
     private final RegistroIngresoEmpleadoRepository registroRepository;
+    private final ConcesionarioRepository concesionarioRepository;
 
     public IngresoService(EmpleadoRepository empleadoRepository,
-                           AfiliacionRepository afiliacionRepository,
-                           RegistroIngresoEmpleadoRepository registroRepository) {
+                          AfiliacionRepository afiliacionRepository,
+                          RegistroIngresoEmpleadoRepository registroRepository,
+                          ConcesionarioRepository concesionarioRepository) {
         this.empleadoRepository = empleadoRepository;
         this.afiliacionRepository = afiliacionRepository;
         this.registroRepository = registroRepository;
+        this.concesionarioRepository = concesionarioRepository;
     }
 
     /**
@@ -146,8 +154,49 @@ public class IngresoService {
                 .toList();
     }
 
+    /**
+     * Calendario mensual de UN concesionario: día por día, quién entró y
+     * quién salió (y a qué hora). Siempre filtra por concesionarioId, así
+     * que nunca mezcla información de dos empresas distintas.
+     */
+    public CalendarioMensualDTO obtenerCalendarioMensual(Long concesionarioId, int anio, int mes) {
+        Concesionario concesionario = concesionarioRepository.findById(concesionarioId)
+                .orElseThrow(() -> new NoSuchElementException("Concesionario no encontrado: " + concesionarioId));
+
+        YearMonth ym = YearMonth.of(anio, mes);
+        LocalDateTime desde = ym.atDay(1).atStartOfDay();
+        LocalDateTime hasta = ym.atEndOfMonth().atTime(23, 59, 59);
+
+        List<RegistroIngresoEmpleado> registros = registroRepository
+                .findByEmpleado_Concesionario_IdAndFechaHoraBetweenOrderByFechaHoraAsc(concesionarioId, desde, hasta);
+
+        // Agrupa por día del mes (1..31), conservando el orden cronológico dentro de cada día.
+        Map<Integer, List<MovimientoCalendarioDTO>> porDia = new TreeMap<>();
+        for (RegistroIngresoEmpleado r : registros) {
+            int dia = r.getFechaHora().getDayOfMonth();
+            String nombre = r.getEmpleado() != null ? r.getEmpleado().getNombre() : null;
+
+            MovimientoCalendarioDTO mov = new MovimientoCalendarioDTO(
+                    nombre,
+                    r.getCedulaConsultada(),
+                    r.getFechaHora().toLocalTime(),
+                    r.getTipoMovimiento(),
+                    r.getResultado(),
+                    r.getMotivo()
+            );
+            porDia.computeIfAbsent(dia, d -> new ArrayList<>()).add(mov);
+        }
+
+        List<DiaCalendarioDTO> dias = new ArrayList<>();
+        for (Map.Entry<Integer, List<MovimientoCalendarioDTO>> entry : porDia.entrySet()) {
+            dias.add(new DiaCalendarioDTO(entry.getKey(), entry.getValue()));
+        }
+
+        return new CalendarioMensualDTO(concesionarioId, concesionario.getNombre(), anio, mes, dias);
+    }
+
     private void guardarRegistro(String cedula, Empleado empleado, ResultadoIngreso resultado,
-                                  TipoMovimiento tipoMovimiento, String motivo) {
+                                 TipoMovimiento tipoMovimiento, String motivo) {
         RegistroIngresoEmpleado registro = new RegistroIngresoEmpleado();
         registro.setCedulaConsultada(cedula);
         registro.setEmpleado(empleado);
