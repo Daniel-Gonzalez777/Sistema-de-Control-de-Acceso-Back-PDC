@@ -124,8 +124,12 @@ public class IngresoService {
     /**
      * True si el último movimiento AUTORIZADO de este empleado fue una ENTRADA
      * (es decir, todavía no ha registrado la salida correspondiente).
+     *
+     * Público porque también lo usa VisitaService: no tiene sentido registrar
+     * una visita a un empleado de concesionario que ni siquiera está dentro
+     * del Parque en este momento.
      */
-    private boolean estaActualmenteDentro(Empleado empleado) {
+    public boolean estaActualmenteDentro(Empleado empleado) {
         Optional<RegistroIngresoEmpleado> ultimo = registroRepository.findTopByEmpleadoOrderByFechaHoraDesc(empleado);
         return ultimo.isPresent()
                 && ultimo.get().getResultado() == ResultadoIngreso.AUTORIZADO

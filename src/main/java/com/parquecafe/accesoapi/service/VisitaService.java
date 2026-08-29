@@ -30,15 +30,18 @@ public class VisitaService {
     private final EmpleadoRepository empleadoRepository;
     private final EmpleadoDirectoParqueRepository empleadoDirectoRepository;
     private final RegistroVisitaRepository registroVisitaRepository;
+    private final IngresoService ingresoService;
 
     public VisitaService(VisitanteRepository visitanteRepository,
                          EmpleadoRepository empleadoRepository,
                          EmpleadoDirectoParqueRepository empleadoDirectoRepository,
-                         RegistroVisitaRepository registroVisitaRepository) {
+                         RegistroVisitaRepository registroVisitaRepository,
+                         IngresoService ingresoService) {
         this.visitanteRepository = visitanteRepository;
         this.empleadoRepository = empleadoRepository;
         this.empleadoDirectoRepository = empleadoDirectoRepository;
         this.registroVisitaRepository = registroVisitaRepository;
+        this.ingresoService = ingresoService;
     }
 
     // CU-04: registrar ingreso de visitante
@@ -59,6 +62,15 @@ public class VisitaService {
         if (tieneEmpleadoSistema) {
             Empleado empleado = empleadoRepository.findById(request.getEmpleadoVisitadoId())
                     .orElseThrow(() -> new EntityNotFoundException("Empleado a visitar no encontrado"));
+
+            // Solo aplica a empleados de concesionario: no se puede registrar una
+            // visita a alguien que ni siquiera está actualmente dentro del Parque.
+            if (!ingresoService.estaActualmenteDentro(empleado)) {
+                throw new IllegalArgumentException(
+                        "No se puede registrar la visita: " + empleado.getNombre()
+                                + " no se encuentra actualmente dentro del Parque.");
+            }
+
             registro.setEmpleadoVisitado(empleado);
             registro.setArea(empleado.getArea());
 
