@@ -15,6 +15,9 @@ public interface RegistroVisitaRepository extends JpaRepository<RegistroVisita, 
     // Visitas que aún no tienen hora de salida registrada (visitantes que siguen dentro del Parque)
     List<RegistroVisita> findByFechaHoraSalidaIsNull();
 
+    // Historial completo de visitas, del más reciente al más antiguo (igual que el historial de empleados).
+    List<RegistroVisita> findAllByOrderByFechaHoraEntradaDesc();
+
     // Historial de visitas recibidas por un empleado del sistema (el más reciente primero)
     List<RegistroVisita> findByEmpleadoVisitadoIdOrderByFechaHoraEntradaDesc(Long empleadoId);
 

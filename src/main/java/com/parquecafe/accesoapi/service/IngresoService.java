@@ -11,8 +11,10 @@ import com.parquecafe.accesoapi.repository.EmpleadoRepository;
 import com.parquecafe.accesoapi.repository.RegistroIngresoEmpleadoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -35,22 +37,15 @@ public class IngresoService {
 
     /**
      * Punto único de validación. Recibe el número de cédula (hoy digitado,
-     * mañana leído por un escáner) y decide dos cosas:
+     * mañana leído por un escáner).
      *
-     *   1) Si la persona NO está actualmente dentro del Parque -> es un
-     *      intento de ENTRADA, se aplican las reglas de negocio de siempre
-     *      (RN-01 a RN-04: concesionario activo + Salud + Pensión + ARL).
-     *
-     *   2) Si la persona YA está dentro (su último movimiento autorizado
-     *      fue una ENTRADA) -> este escaneo se toma como su SALIDA,
-     *      sin volver a validar afiliación (para salir no hace falta
-     *      estar afiliado, solo para entrar). Esto es justamente lo que
-     *      impide que alguien "vuelva a entrar" sin haber salido antes:
-     *      el segundo escaneo consecutivo no es una nueva entrada, es
-     *      la salida de la primera.
-     *
-     * Todo movimiento, autorizado o no, queda guardado (RN-05) y forma
-     * el historial de entradas/salidas.
+     * No se registra salida: cada empleado puede registrar UNA sola entrada
+     * autorizada por día. Si ya la registró hoy y vuelve a escanear su
+     * cédula, el sistema le indica que ya ingresó (sin volver a autorizar
+     * ni a crear una nueva entrada). Al cambiar el día, puede volver a
+     * entrar con normalidad -- esto ocurre solo porque la validación
+     * compara contra la fecha de HOY, no porque algo "lo saque" a
+     * medianoche.
      */
     public ResultadoValidacionDTO validarIngreso(String cedula) {
 
@@ -66,13 +61,16 @@ public class IngresoService {
         Empleado empleado = empleadoOpt.get();
         Concesionario concesionario = empleado.getConcesionario();
 
-        // --- ¿La persona ya está adentro? Si el último movimiento suyo fue
-        //     una ENTRADA autorizada, este escaneo es su SALIDA. ---
+        // --- ¿Ya registró su ingreso HOY? No se autoriza de nuevo. ---
         if (estaActualmenteDentro(empleado)) {
-            guardarRegistro(cedula, empleado, ResultadoIngreso.AUTORIZADO, TipoMovimiento.SALIDA,
-                    "Salida registrada");
-            return new ResultadoValidacionDTO(true, empleado.getNombre(), concesionario.getNombre(),
-                    "Salida registrada", TipoMovimiento.SALIDA);
+            String horaTexto = registroRepository
+                    .findTopByEmpleadoAndTipoMovimientoAndResultadoOrderByFechaHoraDesc(
+                            empleado, TipoMovimiento.ENTRADA, ResultadoIngreso.AUTORIZADO)
+                    .map(r -> r.getFechaHora().format(DateTimeFormatter.ofPattern("HH:mm")))
+                    .orElse("");
+            String motivo = "Ya registró su ingreso hoy" + (horaTexto.isEmpty() ? "" : " a las " + horaTexto);
+            guardarRegistro(cedula, empleado, ResultadoIngreso.NO_AUTORIZADO, TipoMovimiento.ENTRADA, motivo);
+            return new ResultadoValidacionDTO(false, empleado.getNombre(), concesionario.getNombre(), motivo, TipoMovimiento.ENTRADA);
         }
 
         // --- A partir de aquí, es un intento de ENTRADA: se valida todo. ---
@@ -116,34 +114,40 @@ public class IngresoService {
             return new ResultadoValidacionDTO(false, empleado.getNombre(), concesionario.getNombre(), motivo, TipoMovimiento.ENTRADA);
         }
 
-        // Todo en orden -> entrada autorizada
+        // Todo en orden -> entrada autorizada (la única del día para este empleado)
         guardarRegistro(cedula, empleado, ResultadoIngreso.AUTORIZADO, TipoMovimiento.ENTRADA, "OK");
         return new ResultadoValidacionDTO(true, empleado.getNombre(), concesionario.getNombre(), "OK", TipoMovimiento.ENTRADA);
     }
 
     /**
-     * True si el último movimiento AUTORIZADO de este empleado fue una ENTRADA
-     * (es decir, todavía no ha registrado la salida correspondiente).
+     * True si el empleado ya registró una entrada AUTORIZADA hoy. Busca
+     * específicamente la última entrada AUTORIZADA (no "el último registro
+     * sea cual sea"), porque los intentos repetidos de "ya ingresó" también
+     * quedan guardados como NO_AUTORIZADO -- si mirara solo el último
+     * registro sin filtrar, un tercer intento dejaría de detectar la
+     * entrada original y volvería a autorizar por error.
+     *
+     * Al pasar la medianoche, esto vuelve a dar false automáticamente
+     * porque compara contra la fecha de hoy, sin necesidad de ningún
+     * proceso que lo reinicie.
      *
      * Público porque también lo usa VisitaService: no tiene sentido registrar
-     * una visita a un empleado de concesionario que ni siquiera está dentro
-     * del Parque en este momento.
+     * una visita a un empleado de concesionario que no ha ingresado hoy.
      */
     public boolean estaActualmenteDentro(Empleado empleado) {
-        Optional<RegistroIngresoEmpleado> ultimo = registroRepository.findTopByEmpleadoOrderByFechaHoraDesc(empleado);
-        return ultimo.isPresent()
-                && ultimo.get().getResultado() == ResultadoIngreso.AUTORIZADO
-                && ultimo.get().getTipoMovimiento() == TipoMovimiento.ENTRADA;
+        Optional<RegistroIngresoEmpleado> ultimaEntradaAutorizada = registroRepository
+                .findTopByEmpleadoAndTipoMovimientoAndResultadoOrderByFechaHoraDesc(
+                        empleado, TipoMovimiento.ENTRADA, ResultadoIngreso.AUTORIZADO);
+        return ultimaEntradaAutorizada.isPresent()
+                && ultimaEntradaAutorizada.get().getFechaHora().toLocalDate().equals(LocalDate.now());
     }
 
-    // Historial completo de movimientos (entradas y salidas, autorizados o no).
+    // Historial completo de movimientos.
     public java.util.List<RegistroIngresoEmpleado> obtenerHistorial() {
         return registroRepository.findAllByOrderByFechaHoraDesc();
     }
 
-    // Empleados que en este momento están dentro del Parque (entraron y no han
-    // registrado salida). Recorre el historial (ya viene del más reciente al
-    // más antiguo) y se queda con el primer movimiento visto de cada empleado.
+    // Empleados que ya registraron su entrada autorizada HOY.
     public java.util.List<RegistroIngresoEmpleado> obtenerEmpleadosDentro() {
         java.util.List<RegistroIngresoEmpleado> historial = obtenerHistorial();
         java.util.Map<Long, RegistroIngresoEmpleado> ultimoMovimientoPorEmpleado = new java.util.LinkedHashMap<>();
@@ -154,8 +158,11 @@ public class IngresoService {
             ultimoMovimientoPorEmpleado.putIfAbsent(empleadoId, registro); // el primero que aparece es el más reciente
         }
 
+        LocalDate hoy = LocalDate.now();
         return ultimoMovimientoPorEmpleado.values().stream()
-                .filter(r -> r.getResultado() == ResultadoIngreso.AUTORIZADO && r.getTipoMovimiento() == TipoMovimiento.ENTRADA)
+                .filter(r -> r.getResultado() == ResultadoIngreso.AUTORIZADO
+                        && r.getTipoMovimiento() == TipoMovimiento.ENTRADA
+                        && r.getFechaHora().toLocalDate().equals(hoy))
                 .toList();
     }
 

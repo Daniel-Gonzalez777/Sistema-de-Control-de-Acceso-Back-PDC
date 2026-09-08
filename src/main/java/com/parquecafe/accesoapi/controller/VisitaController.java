@@ -12,7 +12,7 @@ import java.util.List;
 @RequestMapping("/api/visitas")
 @CrossOrigin(origins = {
         "http://localhost:4200",
-        "https://front-sistema-de-control-de-acceso.vercel.app"
+        "https://front-sistema-de-control-de-acceso-7gthyuj7w.vercel.app"
 })
 public class VisitaController {
 
@@ -32,7 +32,7 @@ public class VisitaController {
 
     @GetMapping
     public List<RegistroVisita> listarTodas() {
-        return registroVisitaRepository.findAll();
+        return registroVisitaRepository.findAllByOrderByFechaHoraEntradaDesc();
     }
 
     @PostMapping("/ingreso")

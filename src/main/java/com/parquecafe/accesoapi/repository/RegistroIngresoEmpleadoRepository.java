@@ -2,6 +2,8 @@ package com.parquecafe.accesoapi.repository;
 
 import com.parquecafe.accesoapi.model.Empleado;
 import com.parquecafe.accesoapi.model.RegistroIngresoEmpleado;
+import com.parquecafe.accesoapi.model.ResultadoIngreso;
+import com.parquecafe.accesoapi.model.TipoMovimiento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +19,13 @@ public interface RegistroIngresoEmpleadoRepository extends JpaRepository<Registr
     // El movimiento más reciente de un empleado, para saber si está
     // actualmente dentro (último movimiento = ENTRADA autorizada) o fuera.
     Optional<RegistroIngresoEmpleado> findTopByEmpleadoOrderByFechaHoraDesc(Empleado empleado);
+
+    // La última entrada AUTORIZADA de un empleado (ignorando intentos
+    // repetidos de "ya ingresó" que quedan guardados después, para no
+    // perder de vista la entrada real del día). Se usa para decidir si
+    // ya entró hoy, sin importar cuántas veces haya vuelto a escanear.
+    Optional<RegistroIngresoEmpleado> findTopByEmpleadoAndTipoMovimientoAndResultadoOrderByFechaHoraDesc(
+            Empleado empleado, TipoMovimiento tipoMovimiento, ResultadoIngreso resultado);
 
     // Historial completo, del más reciente al más antiguo.
     List<RegistroIngresoEmpleado> findAllByOrderByFechaHoraDesc();
