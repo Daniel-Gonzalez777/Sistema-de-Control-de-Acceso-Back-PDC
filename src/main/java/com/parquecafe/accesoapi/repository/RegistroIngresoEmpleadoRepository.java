@@ -37,6 +37,14 @@ public interface RegistroIngresoEmpleadoRepository extends JpaRepository<Registr
     List<RegistroIngresoEmpleado> findByEmpleado_Concesionario_IdAndFechaHoraBetweenOrderByFechaHoraAsc(
             Long concesionarioId, LocalDateTime desde, LocalDateTime hasta);
 
+    // Todas las entradas AUTORIZADAS dentro de un rango de fechas (se usa
+    // con "hoy 00:00" a "hoy 23:59" para saber quién ya entró hoy). Como
+    // solo puede existir UNA entrada autorizada por empleado por día, esta
+    // consulta ya da directamente "quién está dentro", sin tener que
+    // adivinar cuál de varios registros del mismo empleado es el válido.
+    List<RegistroIngresoEmpleado> findByTipoMovimientoAndResultadoAndFechaHoraBetween(
+            TipoMovimiento tipoMovimiento, ResultadoIngreso resultado, LocalDateTime desde, LocalDateTime hasta);
+
     // Limpieza automática del historial (RF de retención de datos): borra
     // todo lo anterior a "fecha", EXCEPTO el último movimiento de cada
     // empleado -- así nunca se pierde el rastro de quién sigue actualmente

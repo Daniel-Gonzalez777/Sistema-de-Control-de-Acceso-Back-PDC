@@ -4,6 +4,7 @@ import com.parquecafe.accesoapi.dto.RegistroVisitaRequest;
 import com.parquecafe.accesoapi.model.RegistroVisita;
 import com.parquecafe.accesoapi.repository.RegistroVisitaRepository;
 import com.parquecafe.accesoapi.service.VisitaService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,8 +13,10 @@ import java.util.List;
 @RequestMapping("/api/visitas")
 @CrossOrigin(origins = {
         "http://localhost:4200",
-        "https://front-sistema-de-control-de-acceso-7gthyuj7w.vercel.app"
+        "https://front-sistema-de-control-de-acceso.vercel.app"
 })
+// Toda la pantalla de "Visitantes" es exclusiva de Portería (y Admin).
+@PreAuthorize("hasAnyRole('ADMIN','PORTERIA')")
 public class VisitaController {
 
     private final VisitaService visitaService;

@@ -147,23 +147,17 @@ public class IngresoService {
         return registroRepository.findAllByOrderByFechaHoraDesc();
     }
 
-    // Empleados que ya registraron su entrada autorizada HOY.
+    // Empleados que ya registraron su entrada autorizada HOY. Usa una
+    // consulta directa por fecha (no "el último registro de cada
+    // empleado"), para no confundirse si alguien volvió a escanear y quedó
+    // un intento NO_AUTORIZADO ("ya ingresó") guardado después de su
+    // entrada real.
     public java.util.List<RegistroIngresoEmpleado> obtenerEmpleadosDentro() {
-        java.util.List<RegistroIngresoEmpleado> historial = obtenerHistorial();
-        java.util.Map<Long, RegistroIngresoEmpleado> ultimoMovimientoPorEmpleado = new java.util.LinkedHashMap<>();
+        LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
+        LocalDateTime finHoy = LocalDate.now().atTime(23, 59, 59);
 
-        for (RegistroIngresoEmpleado registro : historial) {
-            if (registro.getEmpleado() == null) continue; // cédulas no registradas no cuentan
-            Long empleadoId = registro.getEmpleado().getId();
-            ultimoMovimientoPorEmpleado.putIfAbsent(empleadoId, registro); // el primero que aparece es el más reciente
-        }
-
-        LocalDate hoy = LocalDate.now();
-        return ultimoMovimientoPorEmpleado.values().stream()
-                .filter(r -> r.getResultado() == ResultadoIngreso.AUTORIZADO
-                        && r.getTipoMovimiento() == TipoMovimiento.ENTRADA
-                        && r.getFechaHora().toLocalDate().equals(hoy))
-                .toList();
+        return registroRepository.findByTipoMovimientoAndResultadoAndFechaHoraBetween(
+                TipoMovimiento.ENTRADA, ResultadoIngreso.AUTORIZADO, inicioHoy, finHoy);
     }
 
     /**
