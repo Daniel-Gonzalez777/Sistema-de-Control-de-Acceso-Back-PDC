@@ -16,6 +16,6 @@ CREATE TABLE usuario (
 -- Contraseñas de prueba (cámbialas cuando quieras, insertando un nuevo
 -- hash BCrypt en su lugar): admin123 / porteria123 / concesionario123
 INSERT INTO usuario (username, password, rol, nombre_mostrar) VALUES
-                                                                  ('admin',        '$2b$10$kyJnzWf6jiJVxCRTcnmij.uUIGMrIxz8YKvD/wzQm/ITinIhX0tee', 'ADMIN',        'Administrador'),
-                                                                  ('porteria',     '$2b$10$7Tk3MepxtJfqawBTah2t0ekXaqQi6R0IocUtygHHrq/Y4TwHxPQwK', 'PORTERIA',     'Portería'),
-                                                                  ('concesionario','$2b$10$BGWAug46kXcqWf5KuFNXUuBQ0OZohc5ermY8ayOeq9IaFMi3P3AkW', 'CONCESIONARIO','Concesionario');
+                                                                  ('admin',        '$2b$12$weo7G4U6ryzd7Q39cD/fqe.qehiYEZyPL1W30KsfGqn2gl5QOlQee', 'ADMIN',        'Administrador'),
+                                                                  ('porteria',     '$2b$12$hRHClD1PmnKCIUc0SuTjQuU8pdC7l7K7EkuUGtEotBlxONCQTd7hC', 'PORTERIA',     'Portería'),
+                                                                  ('concesionario','$2b$12$hfSZ4HsXuPwzWKamNnUPUui7805fVsc6maYGD87uWiDwx6ZYm1.Ce', 'CONCESIONARIO','Concesionario');
