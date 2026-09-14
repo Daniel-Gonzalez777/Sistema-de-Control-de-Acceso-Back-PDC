@@ -34,4 +34,10 @@ public class Empleado {
     @ManyToOne(optional = false)
     @JoinColumn(name = "concesionario_id", nullable = false)
     private Concesionario concesionario;
+
+
+    //Esto es cuando el usuario querda incantivo, sin embargo que quede con su historial
+
+    @Column(nullable = false)
+    private boolean activo = true;
 }

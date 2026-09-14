@@ -3,9 +3,12 @@ package com.parquecafe.accesoapi.controller;
 import com.parquecafe.accesoapi.model.Concesionario;
 import com.parquecafe.accesoapi.repository.ConcesionarioRepository;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -39,14 +42,15 @@ public class ConcesionarioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Crear/editar/eliminar: solo Concesionario y Admin.
+    // Crear: se mantiene igual, no se bloqueó.
     @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
     @PostMapping
     public Concesionario crear(@Valid @RequestBody Concesionario concesionario) {
         return repository.save(concesionario);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+    // Editar: ahora EXCLUSIVO de Admin.
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Concesionario> actualizar(@PathVariable Long id, @Valid @RequestBody Concesionario datos) {
         return repository.findById(id)
@@ -59,13 +63,23 @@ public class ConcesionarioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+    // Eliminar: EXCLUSIVO de Admin. Si el concesionario ya tiene empleados
+    // asociados, la base de datos rechaza el borrado -- en vez de dejar
+    // pasar ese error crudo de SQL, se traduce a un mensaje claro que
+    // sugiere desactivar en su lugar (ya existe el campo "activo" para eso).
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        repository.deleteById(id);
+        try {
+            repository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede eliminar: este concesionario ya tiene empleados asociados. " +
+                            "Márcalo como Inactivo en su lugar.");
+        }
         return ResponseEntity.noContent().build();
     }
 }

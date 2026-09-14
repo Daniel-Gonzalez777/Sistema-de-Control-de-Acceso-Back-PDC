@@ -75,6 +75,13 @@ public class IngresoService {
 
         // --- A partir de aquí, es un intento de ENTRADA: se valida todo. ---
 
+        // Empleado marcado como inactivo (ej. ya no trabaja ahí) -> nunca autorizado
+        if (!empleado.isActivo()) {
+            String motivo = "Este empleado está marcado como inactivo";
+            guardarRegistro(cedula, empleado, ResultadoIngreso.NO_AUTORIZADO, TipoMovimiento.ENTRADA, motivo);
+            return new ResultadoValidacionDTO(false, empleado.getNombre(), concesionario.getNombre(), motivo, TipoMovimiento.ENTRADA);
+        }
+
         // RN-04: concesionario inactivo -> nunca autorizado
         if (!concesionario.isActivo()) {
             String motivo = "El concesionario " + concesionario.getNombre() + " está inactivo";
