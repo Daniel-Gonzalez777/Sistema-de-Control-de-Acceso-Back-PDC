@@ -43,9 +43,11 @@ public class AfiliacionController {
         return cargaPlantillaService.cargarPlantilla(archivo, concesionarioId);
     }
 
+    // Lo más reciente primero (mismo criterio que el historial de ingresos
+    // y el de visitas, para que las tres pantallas sean consistentes).
     @GetMapping
     public List<Afiliacion> listar() {
-        return repository.findAll();
+        return repository.findAllByOrderByAnioDescMesDescFechaCargaDesc();
     }
 
     @GetMapping("/{id}")
