@@ -19,7 +19,7 @@ import java.util.List;
 @CrossOrigin(origins = {
         "http://localhost:4200",
         "https://front-sistema-de-control-de-acceso.vercel.app"
-}) // origen por defecto de Angular en desarrollo
+})
 public class IngresoController {
 
     private final IngresoService ingresoService;
@@ -30,31 +30,26 @@ public class IngresoController {
         this.calendarioExcelService = calendarioExcelService;
     }
 
-    // GET /api/ingreso/validar/1002345678
-    // Pantalla de portería: solo Portería y Admin.
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA')")
+    // Público: pantalla de portería, sin login.
     @GetMapping("/validar/{cedula}")
     public ResultadoValidacionDTO validar(@PathVariable String cedula) {
         return ingresoService.validarIngreso(cedula);
     }
 
-    // Historial completo de movimientos. Lo usan Portería (pantalla Historial)
-    // y Concesionario (pantalla Historial) por igual.
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA','CONCESIONARIO')")
+    // Público: pantalla de Historial, sin login.
     @GetMapping("/historial")
     public List<RegistroIngresoEmpleado> historial() {
         return ingresoService.obtenerHistorial();
     }
 
-    // Quiénes ya ingresaron hoy. Mismo acceso que el historial.
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA','CONCESIONARIO')")
+    // Público: mismo criterio que el historial.
     @GetMapping("/dentro")
     public List<RegistroIngresoEmpleado> quienesEstanDentro() {
         return ingresoService.obtenerEmpleadosDentro();
     }
 
-    // Calendario mensual: solo Concesionario y Admin (Portería no tiene esta pantalla).
-    @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+    // Calendario: exclusivo de Admin (ya no existe el rol Concesionario).
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/calendario")
     public CalendarioMensualDTO calendario(
             @RequestParam Long concesionarioId,
@@ -63,8 +58,7 @@ public class IngresoController {
         return ingresoService.obtenerCalendarioMensual(concesionarioId, anio, mes);
     }
 
-    // Exportación del calendario: mismo acceso que el calendario.
-    @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/calendario/exportar")
     public ResponseEntity<ByteArrayResource> exportarCalendario(
             @RequestParam Long concesionarioId,

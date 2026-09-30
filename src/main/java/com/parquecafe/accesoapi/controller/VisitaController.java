@@ -4,7 +4,6 @@ import com.parquecafe.accesoapi.dto.RegistroVisitaRequest;
 import com.parquecafe.accesoapi.model.RegistroVisita;
 import com.parquecafe.accesoapi.repository.RegistroVisitaRepository;
 import com.parquecafe.accesoapi.service.VisitaService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,8 +14,7 @@ import java.util.List;
         "http://localhost:4200",
         "https://front-sistema-de-control-de-acceso.vercel.app"
 })
-// Toda la pantalla de "Visitantes" es exclusiva de Portería (y Admin).
-@PreAuthorize("hasAnyRole('ADMIN','PORTERIA')")
+// Pantalla de "Visitantes": pública, sin login (una de las 4 de portería).
 public class VisitaController {
 
     private final VisitaService visitaService;
@@ -27,7 +25,6 @@ public class VisitaController {
         this.registroVisitaRepository = registroVisitaRepository;
     }
 
-    // Visitantes que actualmente siguen dentro del Parque (sin salida registrada)
     @GetMapping("/activas")
     public List<RegistroVisita> visitasActivas() {
         return registroVisitaRepository.findByFechaHoraSalidaIsNull();
@@ -48,19 +45,16 @@ public class VisitaController {
         return visitaService.registrarSalida(id);
     }
 
-    // Historial de visitas recibidas por un empleado del sistema
     @GetMapping("/empleado/{empleadoId}")
     public List<RegistroVisita> historialPorEmpleado(@PathVariable Long empleadoId) {
         return visitaService.historialPorEmpleado(empleadoId);
     }
 
-    // Historial de visitas recibidas por un empleado directo del parque
     @GetMapping("/empleado-directo/{empleadoDirectoId}")
     public List<RegistroVisita> historialPorEmpleadoDirecto(@PathVariable Long empleadoDirectoId) {
         return visitaService.historialPorEmpleadoDirecto(empleadoDirectoId);
     }
 
-    // Historial de visitas hechas por un visitante
     @GetMapping("/visitante/{visitanteId}")
     public List<RegistroVisita> historialPorVisitante(@PathVariable Long visitanteId) {
         return visitaService.historialPorVisitante(visitanteId);

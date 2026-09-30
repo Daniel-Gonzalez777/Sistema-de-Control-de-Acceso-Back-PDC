@@ -26,9 +26,9 @@ public class EmpleadoController {
         this.repository = repository;
     }
 
-    // Lectura: la comparten Concesionario (su propia gestión) y Portería
-    // (dropdowns de "historial de visitas"). Admin siempre tiene acceso.
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA','CONCESIONARIO')")
+    // Lectura: pública. La usan las pantallas públicas de Visitantes e
+    // Historial de visitas para sus selectores (a quién visita, filtro
+    // por empresa), y también la pantalla de Empleados (solo Admin).
     @GetMapping
     public List<Empleado> listar(@RequestParam(required = false) Long concesionarioId) {
         if (concesionarioId != null) {
@@ -37,7 +37,6 @@ public class EmpleadoController {
         return repository.findAll();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA','CONCESIONARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<Empleado> obtener(@PathVariable Long id) {
         return repository.findById(id)
@@ -45,16 +44,13 @@ public class EmpleadoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Crear: sigue siendo el trabajo diario de Concesionario (dar de alta
-    // a sus propios empleados) -- esto NO se bloqueó.
-    @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+    // Crear/eliminar: exclusivo de Admin (ya no existe el rol Concesionario).
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Empleado crear(@Valid @RequestBody Empleado empleado) {
         return repository.save(empleado);
     }
 
-    // Editar: EXCLUSIVO de Admin (igual que Concesionario). Permite,
-    // entre otras cosas, marcar/desmarcar el campo "activo".
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Empleado> actualizar(@PathVariable Long id, @Valid @RequestBody Empleado datos) {
@@ -71,10 +67,6 @@ public class EmpleadoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Eliminar: EXCLUSIVO de Admin. Si el empleado ya tiene historial
-    // asociado (afiliaciones, visitas, registros de ingreso), la base de
-    // datos rechaza el borrado -- en vez de dejar pasar ese error crudo de
-    // SQL, se traduce a un mensaje claro que sugiere desactivar en su lugar.
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {

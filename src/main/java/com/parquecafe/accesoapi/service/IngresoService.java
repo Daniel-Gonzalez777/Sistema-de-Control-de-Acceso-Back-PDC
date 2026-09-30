@@ -20,6 +20,12 @@ import java.util.*;
 @Service
 public class IngresoService {
 
+    // Días de gracia al inicio de cada mes: si todavía no hay afiliación
+    // del mes actual cargada, se acepta temporalmente la del mes anterior,
+    // para que nadie quede bloqueado el día 1 mientras el concesionario
+    // sube la plantilla nueva.
+    private static final int DIAS_DE_GRACIA = 5;
+
     private final EmpleadoRepository empleadoRepository;
     private final AfiliacionRepository afiliacionRepository;
     private final RegistroIngresoEmpleadoRepository registroRepository;
@@ -90,9 +96,20 @@ public class IngresoService {
         }
 
         // RN-02/RN-03: se valida contra la afiliación del mes en curso.
-        YearMonth ahora = YearMonth.now();
+        YearMonth mesActual = YearMonth.now();
         Optional<Afiliacion> afiliacionOpt = afiliacionRepository
-                .findByEmpleadoAndAnioAndMes(empleado, ahora.getYear(), ahora.getMonthValue());
+                .findByEmpleadoAndAnioAndMes(empleado, mesActual.getYear(), mesActual.getMonthValue());
+
+        // Periodo de gracia: si todavía no hay afiliación del mes actual,
+        // pero estamos dentro de los primeros DIAS_DE_GRACIA días del mes,
+        // se acepta temporalmente la del mes anterior -- evita que todos
+        // los empleados de una empresa queden bloqueados el día 1 mientras
+        // el concesionario sube la plantilla nueva.
+        if (afiliacionOpt.isEmpty() && LocalDate.now().getDayOfMonth() <= DIAS_DE_GRACIA) {
+            YearMonth mesAnterior = mesActual.minusMonths(1);
+            afiliacionOpt = afiliacionRepository
+                    .findByEmpleadoAndAnioAndMes(empleado, mesAnterior.getYear(), mesAnterior.getMonthValue());
+        }
 
         if (afiliacionOpt.isEmpty()) {
             String motivo = "El concesionario no ha cargado la plantilla del mes actual para este empleado";
@@ -154,11 +171,7 @@ public class IngresoService {
         return registroRepository.findAllByOrderByFechaHoraDesc();
     }
 
-    // Empleados que ya registraron su entrada autorizada HOY. Usa una
-    // consulta directa por fecha (no "el último registro de cada
-    // empleado"), para no confundirse si alguien volvió a escanear y quedó
-    // un intento NO_AUTORIZADO ("ya ingresó") guardado después de su
-    // entrada real.
+    // Empleados que ya registraron su entrada autorizada HOY.
     public java.util.List<RegistroIngresoEmpleado> obtenerEmpleadosDentro() {
         LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
         LocalDateTime finHoy = LocalDate.now().atTime(23, 59, 59);

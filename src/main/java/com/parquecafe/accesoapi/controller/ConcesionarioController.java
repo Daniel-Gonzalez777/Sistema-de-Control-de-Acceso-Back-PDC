@@ -26,15 +26,14 @@ public class ConcesionarioController {
         this.repository = repository;
     }
 
-    // Lectura: la comparten Concesionario (su propia gestión) y Portería
-    // (dropdown de "historial de visitas"). Admin siempre tiene acceso.
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA','CONCESIONARIO')")
+    // Lectura: pública. La usan las pantallas públicas de Visitantes e
+    // Historial de visitas para sus selectores (filtro por empresa), y
+    // también la pantalla de Concesionarios (solo Admin).
     @GetMapping
     public List<Concesionario> listar() {
         return repository.findAll();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','PORTERIA','CONCESIONARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<Concesionario> obtener(@PathVariable Long id) {
         return repository.findById(id)
@@ -42,14 +41,13 @@ public class ConcesionarioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Crear: se mantiene igual, no se bloqueó.
-    @PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+    // Crear/editar/eliminar: exclusivo de Admin.
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Concesionario crear(@Valid @RequestBody Concesionario concesionario) {
         return repository.save(concesionario);
     }
 
-    // Editar: ahora EXCLUSIVO de Admin.
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Concesionario> actualizar(@PathVariable Long id, @Valid @RequestBody Concesionario datos) {
@@ -63,10 +61,6 @@ public class ConcesionarioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Eliminar: EXCLUSIVO de Admin. Si el concesionario ya tiene empleados
-    // asociados, la base de datos rechaza el borrado -- en vez de dejar
-    // pasar ese error crudo de SQL, se traduce a un mensaje claro que
-    // sugiere desactivar en su lugar (ya existe el campo "activo" para eso).
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {

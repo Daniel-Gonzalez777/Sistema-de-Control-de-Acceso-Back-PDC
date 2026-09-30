@@ -20,8 +20,8 @@ import java.util.List;
         "http://localhost:4200",
         "https://front-sistema-de-control-de-acceso.vercel.app"
 })
-// Toda la pantalla de "Afiliaciones" es exclusiva de Concesionario (y Admin).
-@PreAuthorize("hasAnyRole('ADMIN','CONCESIONARIO')")
+// Toda la pantalla de "Afiliaciones" es exclusiva de Admin.
+@PreAuthorize("hasRole('ADMIN')")
 public class AfiliacionController {
 
     private final AfiliacionRepository repository;
@@ -32,9 +32,6 @@ public class AfiliacionController {
         this.cargaPlantillaService = cargaPlantillaService;
     }
 
-    // Endpoint clave: recibe el Excel completo de un concesionario y
-    // crea/actualiza en bloque sus empleados y afiliaciones del mes actual.
-    // Se manda como multipart/form-data (archivo adjunto), no como JSON.
     @PostMapping(value = "/cargar-plantilla", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResultadoCargaDTO cargarPlantilla(
             @RequestParam("archivo") MultipartFile archivo,
@@ -43,8 +40,6 @@ public class AfiliacionController {
         return cargaPlantillaService.cargarPlantilla(archivo, concesionarioId);
     }
 
-    // Lo más reciente primero (mismo criterio que el historial de ingresos
-    // y el de visitas, para que las tres pantallas sean consistentes).
     @GetMapping
     public List<Afiliacion> listar() {
         return repository.findAllByOrderByAnioDescMesDescFechaCargaDesc();
