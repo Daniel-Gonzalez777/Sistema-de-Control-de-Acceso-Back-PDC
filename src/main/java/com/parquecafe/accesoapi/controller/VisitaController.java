@@ -60,3 +60,5 @@ public class VisitaController {
         return visitaService.historialPorVisitante(visitanteId);
     }
 }
+
+

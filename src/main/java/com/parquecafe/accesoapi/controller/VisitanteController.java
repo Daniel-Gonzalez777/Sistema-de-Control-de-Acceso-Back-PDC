@@ -12,7 +12,6 @@ import java.util.List;
         "http://localhost:4200",
         "https://front-sistema-de-control-de-acceso.vercel.app"
 })
-// Público, sin login (lo usa la pantalla de Visitantes).
 public class VisitanteController {
 
     private final VisitanteRepository repository;
